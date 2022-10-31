@@ -1,0 +1,63 @@
+{% extends "ahoy3/base.html" %}
+
+{% block content %}
+the wind at spithead
+
+<div id="app">
+{% verbatim %}
+
+{{windSpeed}}mph {{windDirection}}&deg; {{compassPoint}}'erly wind
+
+{% endverbatim %}
+</div>
+
+<script>
+  const { createApp } = Vue
+  let pointsOfCompass = {
+					0 : "N",
+					45 : "NE",
+					90 : "E",
+					135 : "SE",
+					180 : "S",
+					225 : "SW",
+					270 : "W",
+					315 : "NW"
+	};
+  let points = [0, 45, 90, 135, 180, 225, 270, 315];
+  createApp({
+    data() {
+      return {
+				windSpeed: 0.0,
+				windDirection: 0.0,	
+				compassPoint: ""
+      }
+    },
+		methods: {
+			async getData() {
+				const res = await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.7423&longitude=-1.0867&daily=windspeed_10m_max,winddirection_10m_dominant&current_weather=true&windspeed_unit=mph&timezone=Europe%2FLondon");
+			  const finalRes = await res.json();
+				this.windSpeed = finalRes['current_weather']['windspeed'];
+				this.windDirection = finalRes['current_weather']['winddirection'];
+
+				let windDegrees = finalRes['current_weather']['winddirection'];
+				let difference = 361;
+				let pointWithSmallestDifference = "";
+				for (let i = 0; i < points.length; i++) {
+					if (Math.abs(windDegrees - points[i]) < difference) {
+						difference = Math.abs(windDegrees - points[i]);
+						pointWithSmallestDifference = pointsOfCompass[points[i]];
+						
+					}
+				}
+				this.compassPoint = pointWithSmallestDifference;
+			}
+		},
+		mounted() { 
+			this.getData()
+			setInterval(() => this.getData(), 10000)
+		}
+  }).mount('#app')
+</script>
+
+{% endblock %}
+
